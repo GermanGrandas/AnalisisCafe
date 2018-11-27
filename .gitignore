@@ -1,0 +1,16 @@
+
+
+#Datos
+*.xls
+*.csv
+*.tsv
+*.xlsx
+
+#Rfiles
+
+.RData
+.Rhistory
+
+#Test files
+test.py
+test.r

@@ -1,0 +1,346 @@
+---
+title: "AnÃ¡lisis Exportaciones de CafÃ© en Risaralda"
+author : "Germán Grandas"
+output: html_notebook
+---
+
+Usando los datos de las exportaciones de cafe desde el aÃ±o 2016 al 2018 se quiere visualizar como ha cambiado la exportaciÃ³n de cafÃ© en el departamento
+
+```{r}
+library(tidyverse)
+library(lubridate)
+```
+
+##Carga de Datos
+```{r}
+  #datos <- read_tsv(file.path('datos','CadenaProductivaCafeyExportaciones.tsv'))
+
+  datos <- read_csv(file.path('datos','CadenaProductivaActual.csv'))
+```
+
+```{r}
+  datos %>% summary
+```
+```{r}
+  datos <- datos %>% mutate_at(c('Anio','Mes','Cadena','Producto','Partida'),as.factor)
+  datos%>% summary
+```
+```{r}
+  datos %>% count(Anio)
+```
+
+##Analizando Risaralda
+```{r,fig.align='center'}
+  datos %>% filter(grepl('isaralda',DepartamentoOrigen)) %>% ggplot(aes(Anio))+
+  geom_bar(aes(fill=Anio))+labs(title='Exportaciones de Café en Risaralda', y='Cantidad de Exportaciones', x='Año',fill='Año')
+```
+Podría decir que risaralda viene con un crecimiento constante el la exportación de café hacia el exterior, sin embargo entre los años 2006-2011 se presentó una disminución de la cantidad de exportaciones,Algo que marca importancia es que en los años 2007 y 2008 al parecer no hubo exportaciones de café en el departamento,
+Será algo solo de Risaralda? 
+
+### Analizando los años 2007 y 2008 demanera general
+```{r}
+    datos %>% filter(Anio == 2007 | Anio == 2008) %>% summary
+```
+
+No existen datos para los Años 207 y 2008
+
+## Volviendo al análisis de risaralda
+  
+  _Cantidad Exportada por Años_
+```{r,fig.align='center',fig.width=9,fig.height=6}
+  datos %>%  filter(grepl('isaralda',DepartamentoOrigen)) %>% ggplot(aes(x=Anio,y=VolúmenToneladas)) +geom_bar(stat = "identity")+
+    xlab("Año")+labs(title='Toneladas de Café exportadas en Risaralda')
+```
+ 
+ En los últimos tres años ha habido una disminución en las toneladas de café exportadas, principalmente en el 2017 
+ Cómo va en el 2018 la cantidad de exportaciones de café? 
+ 
+```{r,fig.align='center'}
+  datos %>%  filter(grepl('isaralda',DepartamentoOrigen)& Anio==2018) %>% 
+  mutate(Mes =ordered(Mes,c('Enero','Febrero',"Marzo","Abril","Mayo")))%>%ggplot(aes(x=Mes,y=VolúmenToneladas))+
+  geom_bar(stat = "identity")+xlab("Mes")+labs(title='Toneladas de Café exportadas en Risaralda durante el 2018')
+```
+ 
+ Vemos Que en enero se produjo una exportación de más de 7500 toneladas de café pero que en el mes de febrero disminiyó por debajo de las 5000 toneladas, en los otros 3 meses las toneladas exportadas aumentaron, sin embargo se produjo una disminución en Mayo
+ Cómo se está comportanto el 2018 con respecto a los mismos meses del año anterior?
+```{r}
+  require(gridExtra)
+
+  datos <- datos %>%mutate(Mes= ordered(Mes,c('Enero','Febrero',"Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre")))
+```
+ 
+```{r,fig.align='center',fig.width=10,fig.height=5}
+  plot1<-datos %>%  filter(grepl('isaralda',DepartamentoOrigen)& Anio==2017) %>%
+  filter(Mes == 'Enero' | Mes=='Febrero'|Mes=="Marzo"|Mes=="Abril"|Mes=="Mayo")%>%
+  ggplot(aes(x=Mes,y=VolúmenToneladas))+geom_bar(stat = "identity")+xlab("Mes")+labs(title="Cantidad Exportada para el 2017")
+
+  plot2 <- datos %>%  filter(grepl('isaralda',DepartamentoOrigen)& Anio==2018) %>% 
+  ggplot(aes(x=Mes,y=VolúmenToneladas))+geom_bar(stat = "identity")+xlab("Mes")+labs(title="Cantidad Exportada para el 2018")
+  
+  grid.arrange(plot1,plot2,ncol=2)
+```
+ Comparando con el año Anterior se encuentra que este año han disminuído las exportaciones de café del departamento.
+ 
+#Cómo han cambiado los precios entre el 2017 y el 2018
+```{r,fig.align='center',fig.width=14,fig.height=7}
+datos%>%filter(Anio == 2017 | Anio==2018)%>%group_by(Anio,Mes)%>% 
+  summarise(valorTonelada =sum(ValorMilesPesos)/sum(VolúmenToneladas))%>%ggplot(aes(x=Mes,y=valorTonelada))+geom_bar(stat = 'identity')+
+  facet_wrap(~Anio)+labs(title="Valor de la tonelada por mes entre el 2017 y 2018")
+  
+```
+ Se puede ver, que el valor de la tonelada ha venido disminiyendo desde enero del año pasado, Cómo afecta esto a la exportación?
+  ##Como ha cambiado las cantidades exportadas según el precio de la tonelada
+  _2018_
+  
+```{r,fig.align='center',fig.width=12,fig.height=6}
+  datos %>% filter(Anio==2018) %>% group_by(Anio,Mes) %>% 
+  summarise(totalEnviado = sum(VolúmenToneladas),valorTonelada =sum(ValorMilesPesos)/sum(VolúmenToneladas)) %>% 
+  ggplot(aes(x=Mes,y=totalEnviado,fill=valorTonelada))+geom_col()+
+  labs(title="Relación entre valorTonelada y el totalEnviado según los meses del 2018")
+
+```
+  _2017_
+```{r,fig.align='center',fig.width=12,fig.height=6}
+ datos %>% filter(Anio==2017) %>% group_by(Anio,Mes) %>% 
+  summarise(totalEnviado = sum(VolúmenToneladas),valorTonelada =sum(ValorMilesPesos)/sum(VolúmenToneladas)) %>% 
+  ggplot(aes(x=Mes,y=totalEnviado,fill=valorTonelada))+geom_col()+
+  labs(title="Relación entre valorTonelada y el totalEnviado según los meses del 2017")
+
+```
+ _2016_
+```{r,fig.align='center',fig.width=12,fig.height=6}
+ datos %>% filter(Anio==2016) %>% group_by(Anio,Mes) %>% 
+  summarise(totalEnviado = sum(VolúmenToneladas),valorTonelada =sum(ValorMilesPesos)/sum(VolúmenToneladas)) %>% 
+  ggplot(aes(x=Mes,y=totalEnviado,fill=valorTonelada))+geom_col()+
+  labs(title="Relación entre valorTonelada y el totalEnviado según los meses del 2016")
+
+``` 
+ _2015_
+```{r,fig.align='center',fig.width=12,fig.height=6}
+ datos %>% filter(Anio==2015) %>% group_by(Anio,Mes) %>% 
+  summarise(totalEnviado = sum(VolúmenToneladas),valorTonelada =sum(ValorMilesPesos)/sum(VolúmenToneladas)) %>% 
+  ggplot(aes(x=Mes,y=totalEnviado,fill=valorTonelada))+geom_col()+
+  labs(title="Relación entre valorTonelada y el totalEnviado según los meses del 2015")
+
+```
+
+ #Analizando por productos de café en los dos últimos años
+```{r,fig.align='center',fig.width=14,fig.height=7}
+  datos %>%ggplot(aes(Anio))+geom_bar(aes(fill=Anio))+facet_wrap(~Partida)+
+  labs(title="Cantidad de Productos exportados segun el año y su tipo")
+```
+ 
+ Mirando solo café sin tostar y tostado
+ 
+```{r,fig.align='center',fig.width=14,fig.height=7}
+  datos %>% filter(grepl('sin tostar',Partida)|grepl('tostado',Partida))%>%
+  ggplot(aes(Anio))+geom_bar(aes(fill=Anio))+facet_wrap(~Partida)+
+  labs(title="Cantidad de productos exportados relacionados con cafés tostados y sin tostar según el año")
+```
+
+ Una visión General sobre las exportaciones de cafés tostados y sin tostar
+```{r}
+  datos %>% filter(grepl('sin tostar',Partida)|grepl('tostado',Partida))%>% 
+  mutate(tostado = if_else(grepl('tostado',Partida),1,0)) %>% mutate_at(c('tostado'),as.factor)%>%
+  ggplot(aes(Anio))+geom_bar(aes(fill=tostado),position = 'fill')
+```
+ 
+#Analizando precios por departamento
+```{r,fig.align='center',fig.width=14,fig.height=7}
+  datos %>% filter(Anio==2018) %>% group_by(DepartamentoOrigen) %>% 
+  summarise(valorTonelada =sum(ValorMilesPesos)/sum(VolúmenToneladas)) %>% 
+  ggplot(aes(x=DepartamentoOrigen,y=valorTonelada))+geom_bar(stat='identity')+
+  labs(title="Valor de la tonelada por departamento en lo corrido del 2018")
+```
+
+
+
+```{r,fig.align='center',fig.width=14,fig.height=7}
+  datos %>% filter(Anio==2018) %>% group_by(DepartamentoOrigen) %>% 
+  summarise(totalEnviado = sum(VolúmenToneladas),valorTonelada =sum(ValorMilesPesos)/sum(VolúmenToneladas)) %>% 
+  ggplot(aes(x=DepartamentoOrigen,y=totalEnviado))+geom_bar(stat='identity')+
+  labs(title="total de toneladas enviadas por departamento en lo corrido del 2018")
+```
+```{r,fig.align='center',fig.width=14,fig.height=7}
+  datos %>% filter(Anio==2018) %>% group_by(DepartamentoOrigen) %>% 
+  summarise(totalEnviado = sum(VolúmenToneladas),valorTonelada =sum(ValorMilesPesos)/sum(VolúmenToneladas)) %>%
+  filter(totalEnviado < 5000)%>%
+  ggplot(aes(x=DepartamentoOrigen,y=totalEnviado))+geom_bar(stat='identity')+
+  labs(title="total de toneladas enviadas por departamento en lo corrido del 2018")
+```
+ ## Medidas de Tendencia Central 
+  
+  Se analizaran las variables *VolúmenToneladas* y *ValorMilesPesos*
+    _Volúmen Toneladas_
+```{r,fig.align='center',fig.width=14,fig.height=7}
+  datos %>% ggplot(aes(x=Anio,y=VolúmenToneladas))+geom_boxplot()+labs(title='Distribución Toneladas por Año',x="Año")
+```
+ 
+ _Valor Miles de Pesos_
+```{r,fig.align='center',fig.width=14,fig.height=7}
+  datos %>% ggplot(aes(x=Anio,y=ValorMilesPesos))+geom_boxplot()+labs(title='Distribución Valor Miles de Pesos por Año',x="Año")
+```
+Mirando la correlación entre esas dos variables
+```{r}
+install.packages("corrplot")
+  require(corrplot)
+```
+
+```{r,fig.align='center',fig.width=10,fig.height=5}
+  corrplot(cor(datos[,12:14]))
+```
+
+
+
+## Análisis con base en los precios del cafe 
+
+Precios OIC (precio internacional del cafe)
+Precio interno base mensual
+
+Precio externo -> Libras
+Precio Interno -> Carga de cafe 125 Libras
+```{r}
+  precioExterno <- readxl::read_excel(file.path('datos','PreciosOICcafeColombiano_Editado.xlsx'))
+  precioInterno <- readxl::read_excel(file.path('datos','PrecioInternoBaseMensual_Editado.xlsx'))
+```
+
+
+```{r}
+  precioExterno = precioExterno %>% mutate_at(c('Anio',"Mes"),as.factor)
+  precioInterno = precioInterno %>% mutate_at(c('Anio',"Mes"),as.factor)
+```
+
+```{r}
+precioExterno= precioExterno %>%
+  mutate(Mes= ordered(Mes,c('Enero','Febrero',"Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre")))
+
+precioInterno = precioInterno %>%
+  mutate(Mes= ordered(Mes,c('Enero','Febrero',"Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre")))
+```
+
+
+### Separando solo los datos a partir del año 2009
+```{r}
+    datos = datos %>%mutate(Anio=as.numeric(as.character(Anio)))%>% filter(Anio>2008) %>% 
+            mutate(Anio = as.factor(Anio))
+levels(datos$Anio)
+```
+### Uniendo con los otros dos archivos
+```{r}
+  
+  datos <- datos %>% group_by(Anio,Mes) %>% left_join(precioExterno,by = c("Anio","Mes"))
+  datos <- datos %>% group_by(Anio,Mes) %>% left_join(precioInterno,by = c("Anio","Mes"))
+```
+
+
+##Mirando los precios según el mes
+```{r,fig.align='center',fig.width=14,fig.height=7}
+  datos %>% filter(Anio==2018) %>% group_by(Mes) %>% 
+  summarise(promedioExterno = mean(`Promedio ponderado`)) %>%
+  ggplot(aes(x=Mes,y=promedioExterno))+geom_point()+geom_line(aes(x=as.numeric(Mes)))+
+  labs(title="precio promedio de la libra de café en el exterior en lo corrido del 2018", y= 'Promedio Externo (USD)')
+```
+
+```{r,fig.align='center',fig.width=14,fig.height=7}
+  datos %>% filter(Anio==2018) %>% group_by(Mes) %>% 
+  summarise(promedioInterno = mean(`Promedio Mensual`)) %>%
+  ggplot(aes(x=Mes,y=promedioInterno))+geom_point()+geom_line(aes(x=as.numeric(Mes)))+
+  labs(title="precio promedio de la carga de café internamente en lo corrido del 2018",y='Promedio Interno (COP)')
+```
+
+##TRM
+```{r}
+  trm <- readxl::read_xlsx(file.path('datos','TRMHistorico.xlsx'))
+```
+
+```{r,fig.align='center',fig.width=14,fig.height=8}
+  trm %>% 
+  mutate(fecha = ymd(`Fecha (dd/mm/aaaa)`),mes = month(fecha,label=T,abbr = FALSE), year = as.factor(year(fecha)))%>% 
+  group_by(year,mes) %>% summarise(precioPromedio = mean(`Tasa de cambio representativa del mercado (TRM)`)) %>%  
+  filter(as.numeric(as.character(year)) > 2008) %>%ggplot(aes(mes,precioPromedio,color = year, group = year))+
+  geom_point()+geom_line()+ labs(title='TRM del dolar desde el 2009 hasta la actualidad')
+```
+
+
+Array con los precios promedio mensuales del dolar, para unirlo al conjunto de datos completo 
+```{r}
+  preciosPromedioDolar <- trm %>% 
+  mutate(Mes = as.factor(month(`Fecha (dd/mm/aaaa)`,label=T,abbr = FALSE)), Anio = as.factor(year(`Fecha (dd/mm/aaaa)`)))%>% group_by(Anio,Mes) %>% summarise(precioPromedioDolar = mean(`Tasa de cambio representativa del mercado (TRM)`)) %>%ungroup()%>%mutate(Mes = gsub("(^|[[:space:]])([[:alpha:]])", "\\1\\U\\2", Mes, perl=TRUE))
+
+preciosPromedioDolar= preciosPromedioDolar %>%
+  mutate(Mes= ordered(Mes,c('Enero','Febrero',"Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre")))
+
+preciosPromedioDolar = preciosPromedioDolar %>%mutate(Anio=as.numeric(as.character(Anio)))%>% filter(Anio>2008) %>% 
+            mutate(Anio = as.factor(Anio))
+
+
+
+```
+
+
+```{r}
+  datos <- datos %>% group_by(Anio,Mes) %>% left_join(preciosPromedioDolar,by = c("Anio","Mes"))
+```
+
+## Guardando el archivo "final"
+
+```{r}
+  write_rds(datos,file.path('datos','datosFinales.rds'))
+```
+
+
+
+# PARTE 2
+
+Carga inicial de los datos
+```{r}
+  datos <- read_rds(file.path('datos','datosFinales.rds'))
+```
+
+Establecer un marco de referencia común entre los diversos precios 
+  
+  Precios OIC -> centavos de dolar por libra ( 100 centavos = 1 dolar)
+      $valorXlibraDolares =\frac{precioXlibra}{100}$
+  Precios Internos -> Pesos por carga de 125 kg (Precio / 125 -> valor de cada Kilo /2 ->valor de cada libra)
+        $ValorXlibra = \frac{PrecioXcarga}{250}$
+  
+```{r}
+  names(datos)
+
+  datos = datos %>% select(-`Precio del indicador compuesto OIC`,-`Nueva York`,-Alemania)
+```
+
+
+```{r}
+  datos <- datos %>% 
+  mutate(valorXlibraExt_USD = round(`Promedio ponderado (USD)`/100,4), 
+         valorXlibraInt_COP= round(`Promedio Mensual (COP)`/250,4)) 
+```
+
+```{r}
+  datos <- datos %>%
+    mutate(valorXlibraInt_USD = round(valorXlibraInt_COP / precioPromedioDolar,4))
+```
+
+
+```{r,fig.align='center',fig.width=12,fig.height=8}
+  datos %>%filter(Anio==2017)%>%group_by(Mes) %>% 
+  mutate(exporta = n(), difPrecios = valorXlibraInt_USD-valorXlibraExt_USD) %>%
+  ggplot(aes(Mes,difPrecios, color=exporta)) + geom_point(size = 6)+
+  labs(title="Relación entre la diferencia de precios y las cantidades exportadas por mes")
+```
+
+```{r,fig.align='center',fig.width=12,fig.height=8}
+  datos %>%group_by(Anio,Mes) %>% 
+  mutate(exporta = n(), difPrecios = valorXlibraInt_USD-valorXlibraExt_USD) %>%
+  ggplot(aes(Mes,difPrecios,color=exporta)) + geom_point(size = 4)+facet_wrap(~Anio)+
+  labs(title="Relación entre la diferencia de precios y las cantidades exportadas por mes")
+```
+
+```{r,fig.align='center',fig.width=12,fig.height=8}
+  datos %>%filter(Anio==2017)%>%group_by(Mes) %>% 
+  mutate(exporta = n(), difPrecios = valorXlibraInt_USD-valorXlibraExt_USD) %>%ungroup()%>%
+  ggplot(aes(x=valorXlibraInt_USD,y=exporta)) + geom_point(size=6)+
+  labs(title="Relación entre el precio interno y las cantidades exportadas por mes",x="valorXlibraInt_USD")
+```
+
