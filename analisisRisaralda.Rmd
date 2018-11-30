@@ -311,6 +311,7 @@ Establecer un marco de referencia común entre los diversos precios
 ```
 
 
+## Análisis libra interna-libra externa
 ```{r}
   datos <- datos %>% 
   mutate(valorXlibraExt_USD = round(`Promedio ponderado (USD)`/100,4), 
@@ -325,7 +326,7 @@ Establecer un marco de referencia común entre los diversos precios
 
 ```{r,fig.align='center',fig.width=12,fig.height=8}
   datos %>%filter(Anio==2017)%>%group_by(Mes) %>% 
-  mutate(exporta = n(), difPrecios = valorXlibraInt_USD-valorXlibraExt_USD) %>%
+  mutate(exporta = n(), difPrecios = (valorXlibraInt_USD-valorXlibraExt_USD)) %>%
   ggplot(aes(Mes,difPrecios, color=exporta)) + geom_point(size = 6)+
   labs(title="Relación entre la diferencia de precios y las cantidades exportadas por mes")
 ```
@@ -334,13 +335,70 @@ Establecer un marco de referencia común entre los diversos precios
   datos %>%group_by(Anio,Mes) %>% 
   mutate(exporta = n(), difPrecios = valorXlibraInt_USD-valorXlibraExt_USD) %>%
   ggplot(aes(Mes,difPrecios,color=exporta)) + geom_point(size = 4)+facet_wrap(~Anio)+
+  labs(title="Relación entre la diferencia de precios y las cantidades exportadas por Año")
+```
+
+##Analisis libra externa-libra interna
+
+```{r,fig.align='center',fig.width=12,fig.height=8}
+  datos %>%filter(Anio==2017)%>%group_by(Mes) %>% 
+  mutate(exporta = n(), difPrecios = valorXlibraExt_USD-valorXlibraInt_USD) %>%
+  ggplot(aes(Mes,difPrecios, color=exporta)) + geom_point(size = 6)+
   labs(title="Relación entre la diferencia de precios y las cantidades exportadas por mes")
 ```
 
+```{r,fig.align='center',fig.width=12,fig.height=8}
+  datos %>%group_by(Anio,Mes) %>% 
+  mutate(exporta = n(), difPrecios = valorXlibraExt_USD-valorXlibraInt_USD) %>%
+  ggplot(aes(Mes,difPrecios,color=exporta)) + geom_point(size = 4)+facet_wrap(~Anio)+
+  labs(title="Relación entre la diferencia de precios y las cantidades exportadas por Año")
+```
+
+
+```{r,fig.align='center',fig.width=12,fig.height=8}
+  datos %>%filter(Anio==2017)%>%group_by(Mes) %>% 
+  mutate(exporta = n(), difPrecios = valorXlibraExt_USD-valorXlibraInt_USD) %>%
+  ggplot(aes(difPrecios,exporta,color=Mes)) + geom_jitter(size = 3)+
+  labs(title="Relación entre la diferencia de precios y las cantidades exportadas para el 2017")
+```
+
+
+## análisis por precios
 ```{r,fig.align='center',fig.width=12,fig.height=8}
   datos %>%filter(Anio==2017)%>%group_by(Mes) %>% 
   mutate(exporta = n(), difPrecios = valorXlibraInt_USD-valorXlibraExt_USD) %>%ungroup()%>%
   ggplot(aes(x=valorXlibraInt_USD,y=exporta)) + geom_point(size=6)+
   labs(title="Relación entre el precio interno y las cantidades exportadas por mes",x="valorXlibraInt_USD")
+```
+
+```{r,fig.align='center',fig.width=12,fig.height=8}
+  datos %>%group_by(Anio,Mes) %>% 
+  mutate(exporta = n(), difPrecios = valorXlibraInt_USD-valorXlibraExt_USD) %>%ungroup()%>%
+  ggplot(aes(x=valorXlibraInt_USD,y=exporta)) + geom_jitter(size=4)+facet_wrap(~Anio)+
+  labs(title="Relación entre el precio interno y las cantidades exportadas por mes",x="valorXlibraInt_USD")
+```
+
+###Precios libra externa
+```{r,fig.align='center',fig.width=12,fig.height=8}
+  datos %>%group_by(Anio,Mes) %>% 
+  mutate(exporta = n(), difPrecios = valorXlibraInt_USD-valorXlibraExt_USD) %>%ungroup()%>%
+  ggplot(aes(x=valorXlibraExt_USD,y=exporta)) + geom_jitter(size=4)+facet_wrap(~Anio)+
+  labs(title="Relación entre el precio Externo y las cantidades exportadas por mes",x="valorXlibraInt_USD")
+```
+
+```{r,fig.align='center',fig.width=12,fig.height=8}
+  datos %>%group_by(Anio,Mes) %>% 
+  mutate(exporta = n(), difPrecios = valorXlibraInt_USD-valorXlibraExt_USD) %>%ungroup()%>%
+  ggplot(aes(x=valorXlibraInt_USD,y=valorXlibraExt_USD,color=exporta)) + geom_jitter(size=4)+facet_wrap(~Anio)+
+  labs(title="precio interno vs Precio Externo",x="valorXlibraInt_USD")
+```
+
+
+###Analizando el 2017
+```{r,fig.align='center',fig.width=12,fig.height=8}
+  datos %>%filter(Anio==2017) %>%group_by(Mes) %>% 
+  mutate(exporta = n(), difPrecios = valorXlibraInt_USD-valorXlibraExt_USD) %>%ungroup()%>%
+  ggplot(aes(x=valorXlibraInt_USD,y=valorXlibraExt_USD,color=exporta)) + geom_jitter(size=4)+facet_wrap(~Anio)+
+  labs(title="precio interno vs Precio Externo",x="valorXlibraInt_USD")
 ```
 
