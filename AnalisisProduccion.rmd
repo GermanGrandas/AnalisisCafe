@@ -1,0 +1,129 @@
+---
+title: "Análisis producción café 2009-2018"
+output: html_notebook
+---
+
+```{r}
+
+library(tidyverse)
+library(lubridate)
+
+```
+
+se cargan los datos
+```{r}
+  datosAnual <- readxl::read_excel(file.path('datos','Produccion_valor_anualModf.xlsx'))
+```
+
+#Datos Valor Anual Producción
+##EDA
+
+```{r}
+  datosAnual <- datosAnual %>% 
+  mutate(yearC = as.factor(`AÑOS CALENDARIO`), yearsC = as.factor(`AÑOS CAFETEROS`)) %>% mutate(vCosecha = `Valor de la cosecha`, vCosechaCaf = `Valor de la cosecha Cafeteros` )%>%select(yearC,vCosecha, yearsC,vCosechaCaf)
+```
+
+
+```{r}
+  datosAnual %>% ggplot(aes(x=yearC,y=vCosecha)) +geom_point()+labs(title='Valor de la producción Anual')+geom_line(aes(x=as.numeric(yearsC)))
+```
+
+```{r}
+  datosAnual %>% ggplot(aes(x=yearsC,y=vCosechaCaf))+geom_point()+
+  geom_line(aes(x=as.numeric(yearsC)))+
+  labs(title='Valor de la producción Anual AñosCafeteros')+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+```{r}
+  write_rds(datosAnual,file.path('datos','datosAnualesProd.rds'))
+```
+
+#Datos Volumen Mensual
+```{r}
+  datosvol <- readxl::read_excel(file.path('datos','Produccion_volumen_mensualCompleto.xlsx'))
+```
+
+```{r}
+  datosvol %>% summary
+```
+
+```{r}
+  datosvol <- datosvol %>% mutate( year = year(Mes) , mes = as.factor(month(Mes,label=T,abbr = FALSE)), prod = `Producción`) %>% select(year,mes,prod)
+```
+
+
+###EDA
+```{r}
+  datosvol %>% group_by(year) %>% summarise(prodT = sum(prod)) %>%
+  ggplot(aes(x=year,y=prodT))+geom_point()+
+  geom_line(aes(x=as.numeric(year)))+
+  labs(title='Producción Anual Total')
+```
+
+```{r}
+  datosvol %>% group_by(year) %>% summarise(prodP = mean(prod)) %>%
+  ggplot(aes(x=year,y=prodP))+geom_point()+
+  geom_line(aes(x=as.numeric(year)))+
+  labs(title='Producción Anual Promedio')
+```
+
+#Analizando Series de tiempo
+```{r}
+  #install.packages('xts')
+library(astsa)
+library(xts)
+```
+
+
+```{r}
+  #Datos modificados
+  datosvol <- read_rds(file.path('datos','datosVolMensual.rds'))
+  #Datos sin modificar
+  datosvol2 <- readxl::read_excel(file.path('datos','Produccion_volumen_mensualCompleto.xlsx'))
+
+  #Datos convertidos a TimeSeries
+  datos <- xts(x=datosvol2$Producci�n, order.by = datosvol2$Mes)
+
+  
+```
+
+##EDA
+
+```{r}
+  datos %>% plot(., main='Producci�n mensual de caf� desde 1956 hasta 2018')
+```
+
+```{r}
+  plot(diff(log(datos)))
+```
+
+```{r}
+  plot(acf2(diff(log(datos))))
+```
+
+
+```{r}
+  datosT <- diff(log(datos))
+```
+
+```{r}
+  model <- sarima(datos,p=1,d=0,q=0)
+```
+
+```{r}
+  model$ttable
+  model$AIC
+  model$BIC
+```
+
+```{r}
+  model <- sarima(datosT,p=0,d=1,q=1)
+```
+```{r}
+model$ttable
+  model$AIC
+  model$BIC
+```
+
+
